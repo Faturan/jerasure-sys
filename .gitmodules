@@ -1,0 +1,6 @@
+[submodule "gf-complete"]
+	path = gf-complete
+	url = https://github.com/ceph/gf-complete
+[submodule "jerasure"]
+	path = jerasure
+	url = https://github.com/ceph/jerasure
