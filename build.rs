@@ -26,16 +26,20 @@ fn main() {
     let je_lib_path = je_dir_path.join("src/.libs/");
 
     // Tell cargo to look for shared libraries in the specified directory
-    println!("cargo:rustc-link-search={}", gc_lib_path.to_str().unwrap());
-    println!("cargo:rustc-link-search={}", je_lib_path.to_str().unwrap());
-
-    println!("cargo:rustc-env=LD_LIBRARY_PATH={};{}", gc_lib_path.to_str().unwrap(), je_lib_path.to_str().unwrap());
+    println!(
+        "cargo:rustc-link-search=native={}",
+        gc_lib_path.to_str().unwrap()
+    );
+    println!(
+        "cargo:rustc-link-search=native={}",
+        je_lib_path.to_str().unwrap()
+    );
 
     let gc_lib_name = "gf_complete";
     let je_lib_name = "Jerasure";
 
-    println!("cargo:rustc-link-lib={}", gc_lib_name);
-    println!("cargo:rustc-link-lib={}", je_lib_name);
+    println!("cargo:rustc-link-lib=static={}", gc_lib_name);
+    println!("cargo:rustc-link-lib=static={}", je_lib_name);
 
     // Tell cargo to invalidate the built crate whenever the header changes.
     println!("cargo:rerun-if-changed={}", gc_headers_path_str);
@@ -54,6 +58,7 @@ fn main() {
 
     if !std::process::Command::new("./configure")
         .current_dir(&gc_dir_path)
+        .arg("--enable-static")
         .output()
         .expect("could not spawn `./configure`")
         .status
@@ -88,6 +93,7 @@ fn main() {
 
     if !std::process::Command::new("./configure")
         .current_dir(&je_dir_path)
+        .arg("--enable-static")
         .args(vec![&arg1, &arg2])
         .output()
         .expect("could not spawn `./configure`")
