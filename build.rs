@@ -13,19 +13,11 @@ fn main() {
         .canonicalize()
         .expect("cannot canonicalize path");
 
-    let gc_headers_path = gc_dir_path.join("include/gf_complete.h");
-    let gc_headers_path_str = gc_headers_path
-        .to_str()
-        .expect("Path is not a valid string");
-    let je_headers_path = je_dir_path.join("include/jerasure.h");
-    let je_headers_path_str = je_headers_path
-        .to_str()
-        .expect("Path is not a valid string");
+    let gc_headers_path = gc_dir_path.join("include");
+    let je_headers_path = je_dir_path.join("include");
+    let gc_lib_path = gc_dir_path.join("src/.libs");
+    let je_lib_path = je_dir_path.join("src/.libs");
 
-    let gc_lib_path = gc_dir_path.join("src/.libs/");
-    let je_lib_path = je_dir_path.join("src/.libs/");
-
-    // Tell cargo to look for shared libraries in the specified directory
     println!(
         "cargo:rustc-link-search=native={}",
         gc_lib_path.to_str().unwrap()
@@ -41,9 +33,7 @@ fn main() {
     println!("cargo:rustc-link-lib=static={}", gc_lib_name);
     println!("cargo:rustc-link-lib=static={}", je_lib_name);
 
-    // Tell cargo to invalidate the built crate whenever the header changes.
-    println!("cargo:rerun-if-changed={}", gc_headers_path_str);
-    println!("cargo:rerun-if-changed={}", je_headers_path_str);
+    println!("cargo:rerun-if-changed={}", "wrapper.h");
 
     if !std::process::Command::new("autoreconf")
         .current_dir(&gc_dir_path)
@@ -88,13 +78,14 @@ fn main() {
         panic!("could not compile jerasure");
     }
 
-    let arg1 = format!("LDFLAGS=-L{}/src/.libs/", gc_dir_path.to_str().unwrap());
-    let arg2 = format!("CPPFLAGS=-I{}/include", gc_dir_path.to_str().unwrap());
+    let arg1 = format!("LDFLAGS=-L{}", gc_lib_path.to_str().unwrap());
+    let arg2 = format!("CPPFLAGS=-I{}", gc_headers_path.to_str().unwrap());
 
     if !std::process::Command::new("./configure")
         .current_dir(&je_dir_path)
         .arg("--enable-static")
-        .args(vec![&arg1, &arg2])
+        .arg(&arg1)
+        .arg(&arg2)
         .output()
         .expect("could not spawn `./configure`")
         .status
@@ -113,26 +104,17 @@ fn main() {
         panic!("could not make jerasure");
     }
 
-    let carg = format!("-I{}/include", gc_dir_path.to_str().unwrap());
+    let gc_clang_arg = format!("-I{}", gc_headers_path.to_str().unwrap());
+    let je_clang_arg = format!("-I{}", je_headers_path.to_str().unwrap());
 
-    // The bindgen::Builder is the main entry point
-    // to bindgen, and lets you build up options for
-    // the resulting bindings.
     let bindings = bindgen::Builder::default()
-        .clang_arg(&carg)
-        // The input header we would like to generate
-        // bindings for.
-        .header(gc_headers_path_str)
-        .header(je_headers_path_str)
-        // Tell cargo to invalidate the built crate whenever any of the
-        // included header files changed.
+        .clang_arg(&gc_clang_arg)
+        .clang_arg(&je_clang_arg)
+        .header("wrapper.h")
         .parse_callbacks(Box::new(CargoCallbacks))
-        // Finish the builder and generate the bindings.
         .generate()
-        // Unwrap the Result and panic on failure.
         .expect("Unable to generate bindings");
 
-    // Write the bindings to the $OUT_DIR/bindings.rs file.
     let out_path = PathBuf::from(env::var("OUT_DIR").unwrap()).join("bindings.rs");
     bindings
         .write_to_file(out_path)
