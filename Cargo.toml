@@ -2,8 +2,13 @@
 name = "jerasure-sys"
 version = "0.1.0"
 edition = "2021"
-
-[dependencies]
+description = "Rust bindings for the jerasure library."
+readme = "README.md"
+repository = "https://github.com/Faturan/jerasure-sys"
+license = "MIT"
+keywords = ["storage", "erasure-code"]
+categories = ["external-ffi-bindings"]
 
 [build-dependencies]
+autotools = "0.2.6"
 bindgen = "0.66.1"
