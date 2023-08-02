@@ -9,4 +9,3 @@
 #include "jerasure.h"
 #include "liberation.h"
 #include "reed_sol.h"
-#include "timing.h"
